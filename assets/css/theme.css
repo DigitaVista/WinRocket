@@ -289,10 +289,16 @@
 .wr-result h3 { margin: 0 0 10px; font-size: 18px; }
 .wr-result h3 a { color: var(--wr-navy); text-decoration: none; }
 .wr-result__winners { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.wr-result__winners li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 12px; border-radius: 4px; background: var(--wr-surface); font-size: 13px; }
-.wr-result__prize { display: inline-flex; align-items: center; gap: 6px; color: #b45309; font-weight: 700; }
-.wr-result__prize .wr-icon { width: 16px; height: 16px; }
-.wr-result__name { color: var(--wr-navy); font-weight: 700; }
+.wr-result__counts { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.wr-result__count { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 99px; font-size: 11px; font-weight: 700; }
+.wr-result__count .wr-icon, .wr-result__type .wr-icon { width: 14px; height: 14px; }
+.wr-result__count--draw, .wr-result__row--draw .wr-result__type { background: #fef3c7; color: #b45309; }
+.wr-result__count--instant, .wr-result__row--instant .wr-result__type { background: #ede9fe; color: #6d28d9; }
+.wr-result__count--wheel, .wr-result__row--wheel .wr-result__type { background: #dcfce7; color: #15803d; }
+.wr-result__winners li { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; border-radius: 4px; background: var(--wr-surface); font-size: 13px; }
+.wr-result__type { display: inline-flex; align-items: center; gap: 5px; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.wr-result__prize { color: var(--wr-navy); font-weight: 700; }
+.wr-result__name { color: var(--wr-muted); font-weight: 600; }
 .wr-result__ticket { margin-left: auto; padding: 2px 8px; border-radius: 4px; background: #fff; font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 700; }
 .wr-pagination { margin-top: 24px; text-align: center; }
 .wr-pagination .page-numbers { display: inline-block; min-width: 36px; margin: 0 2px; padding: 8px; border: 1px solid var(--wr-border); border-radius: 4px; background: #fff; text-decoration: none; }

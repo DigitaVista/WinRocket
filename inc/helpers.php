@@ -339,6 +339,8 @@ function winrocket_icon( $name ) {
 		'arrow'  => '<path d="M5 12h14M13 6l6 6-6 6"/>',
 		'trophy' => '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3"/>',
 		'close'  => '<path d="M6 6l12 12M18 6 6 18"/>',
+		'bolt'   => '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/>',
+		'wheel'  => '<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M5.6 5.6l12.8 12.8M18.4 5.6 5.6 18.4"/>',
 	);
 	if ( ! isset( $paths[ $name ] ) ) {
 		return '';

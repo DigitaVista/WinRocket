@@ -243,7 +243,7 @@ function winrocket_demo_prepare( $entries ) {
 				'post_status'  => 'publish',
 				'post_title'   => __( 'Draw results', 'winrocket' ),
 				'post_name'    => 'draw-results',
-				'post_content' => "<!-- wp:paragraph -->\n<p>" . esc_html__( 'Every finished draw with its winning tickets.', 'winrocket' ) . "</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:winrocket/draw-results /-->",
+				'post_content' => "<!-- wp:paragraph -->\n<p>" . esc_html__( 'Every winner: main draws, instant wins and lucky wheel prizes.', 'winrocket' ) . "</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:winrocket/draw-results /-->",
 			)
 		);
 		if ( $page_id && ! is_wp_error( $page_id ) ) {

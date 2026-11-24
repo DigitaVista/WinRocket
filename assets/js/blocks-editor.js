@@ -59,6 +59,14 @@
 		if ( 'source' === name ) {
 			return el( C.SelectControl, { key: name, label: labels[ name ], value: value, options: sources, onChange: set } );
 		}
+		if ( 'winnerTypes' === name ) {
+			return el( C.SelectControl, { key: name, label: __( 'Winners to show', 'winrocket' ), value: value, onChange: set, options: [
+				{ label: __( 'All winners', 'winrocket' ), value: 'all' },
+				{ label: __( 'Main draw only', 'winrocket' ), value: 'draw' },
+				{ label: __( 'Instant wins only', 'winrocket' ), value: 'instant' },
+				{ label: __( 'Lucky wheel only', 'winrocket' ), value: 'wheel' }
+			] } );
+		}
 		if ( 'category' === name ) {
 			if ( 'category' !== props.attributes.source ) {
 				return null;

@@ -82,7 +82,8 @@ function winrocket_block_definitions() {
 		'draw-results'     => array(
 			'title'      => __( 'Draw results', 'winrocket' ),
 			'attributes' => array(
-				'perPage' => $num( 10 ),
+				'perPage'     => $num( 10 ),
+				'winnerTypes' => $str( 'all' ),
 			),
 		),
 	);
@@ -529,7 +530,24 @@ function winrocket_render_results_cta( $a ) {
 }
 
 /**
- * Draw results list.
+ * Winning type group for a winner row.
+ *
+ * @param string|null $type wining_type column.
+ * @return string draw|instant|wheel
+ */
+function winrocket_winner_group( $type ) {
+	$type = (string) $type;
+	if ( '' === $type || 'final' === $type ) {
+		return 'draw';
+	}
+	if ( 'instant_win' === $type ) {
+		return 'instant';
+	}
+	return 'wheel';
+}
+
+/**
+ * Draw results list: main draw, instant win and lucky wheel winners.
  *
  * @param array $a Attributes.
  * @return string
@@ -542,19 +560,47 @@ function winrocket_render_draw_results( $a ) {
 		return '<p class="wr-empty">' . esc_html__( 'No draws have been made yet.', 'winrocket' ) . '</p>';
 	}
 
-	$per   = max( 1, min( 50, (int) $a['perPage'] ) );
-	$page  = isset( $_GET['wr-results'] ) ? max( 1, absint( $_GET['wr-results'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-	$off   = ( $page - 1 ) * $per;
+	$per  = max( 1, min( 50, (int) $a['perPage'] ) );
+	$page = isset( $_GET['wr-results'] ) ? max( 1, absint( $_GET['wr-results'] ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	$off  = ( $page - 1 ) * $per;
 
-	// One row per drawn competition (main draw), newest first.
+	// Which winners to list.
+	$show = isset( $a['winnerTypes'] ) ? (string) $a['winnerTypes'] : 'all';
+	switch ( $show ) {
+		case 'draw':
+			$where = "(wining_type = 'final' OR wining_type IS NULL OR wining_type = '')";
+			break;
+		case 'instant':
+			$where = "wining_type = 'instant_win'";
+			break;
+		case 'wheel':
+			$where = "(wining_type IS NOT NULL AND wining_type NOT IN ('', 'final', 'instant_win'))";
+			break;
+		default:
+			$where = '1=1';
+	}
+
+	// One card per competition, newest win first.
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-	$total = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT product_id) FROM {$table} WHERE wining_type = 'final' OR wining_type IS NULL" );
+	$total = (int) $wpdb->get_var( "SELECT COUNT(DISTINCT product_id) FROM {$table} WHERE {$where}" );
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-	$products = $wpdb->get_col( $wpdb->prepare( "SELECT product_id FROM {$table} WHERE wining_type = 'final' OR wining_type IS NULL GROUP BY product_id ORDER BY MAX(created_at) DESC LIMIT %d OFFSET %d", $per, $off ) );
+	$products = $wpdb->get_col( $wpdb->prepare( "SELECT product_id FROM {$table} WHERE {$where} GROUP BY product_id ORDER BY MAX(created_at) DESC LIMIT %d OFFSET %d", $per, $off ) );
 
 	if ( empty( $products ) ) {
-		return '<p class="wr-empty">' . esc_html__( 'No draws have been made yet. Check back after the first competition closes.', 'winrocket' ) . '</p>';
+		return '<p class="wr-empty">' . esc_html__( 'No winners yet. Check back after the first draw or instant win.', 'winrocket' ) . '</p>';
 	}
+
+	$labels = array(
+		'draw'    => __( 'Main draw', 'winrocket' ),
+		'instant' => __( 'Instant win', 'winrocket' ),
+		'wheel'   => __( 'Lucky wheel', 'winrocket' ),
+	);
+	$icons  = array(
+		'draw'    => 'trophy',
+		'instant' => 'bolt',
+		'wheel'   => 'wheel',
+	);
+	$date_format = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
 
 	$html = '<div class="wr-results">';
 	foreach ( $products as $product_id ) {
@@ -563,31 +609,87 @@ function winrocket_render_draw_results( $a ) {
 			continue;
 		}
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE product_id = %d AND (wining_type = 'final' OR wining_type IS NULL) ORDER BY created_at ASC", $product_id ), ARRAY_A );
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE product_id = %d AND {$where} ORDER BY created_at ASC, id ASC", $product_id ), ARRAY_A );
 		if ( empty( $rows ) ) {
 			continue;
 		}
-		$last = end( $rows );
-		$date = mysql2date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $last['created_at'] );
+
+		// Main draw winners first, then instant wins, then lucky wheel.
+		$groups = array(
+			'draw'    => array(),
+			'instant' => array(),
+			'wheel'   => array(),
+		);
+		foreach ( $rows as $row ) {
+			$groups[ winrocket_winner_group( $row['wining_type'] ) ][] = $row;
+		}
+
+		$last_draw = $groups['draw'] ? end( $groups['draw'] ) : null;
+		$last_any  = end( $rows );
+		if ( $last_draw ) {
+			/* translators: %s: draw date. */
+			$eyebrow = sprintf( __( 'Drawn %s', 'winrocket' ), mysql2date( $date_format, $last_draw['created_at'] ) );
+		} else {
+			/* translators: %s: date. */
+			$eyebrow = sprintf( __( 'Latest win %s', 'winrocket' ), mysql2date( $date_format, $last_any['created_at'] ) );
+		}
+
+		$counts = array();
+		foreach ( $groups as $key => $list ) {
+			if ( $list ) {
+				$n = count( $list );
+				if ( 'draw' === $key ) {
+					/* translators: %s: number of winners. */
+					$text = sprintf( _n( '%s main draw winner', '%s main draw winners', $n, 'winrocket' ), number_format_i18n( $n ) );
+				} elseif ( 'instant' === $key ) {
+					/* translators: %s: number of wins. */
+					$text = sprintf( _n( '%s instant win', '%s instant wins', $n, 'winrocket' ), number_format_i18n( $n ) );
+				} else {
+					/* translators: %s: number of wins. */
+					$text = sprintf( _n( '%s lucky wheel win', '%s lucky wheel wins', $n, 'winrocket' ), number_format_i18n( $n ) );
+				}
+				$counts[] = '<span class="wr-result__count wr-result__count--' . esc_attr( $key ) . '">' . winrocket_icon( $icons[ $key ] ) . esc_html( $text ) . '</span>';
+			}
+		}
 
 		$html .= '<article class="wr-result">';
 		$html .= '<a class="wr-result__media" href="' . esc_url( get_permalink( $product_id ) ) . '">' . $product->get_image( 'winrocket-card' ) . '</a>';
 		$html .= '<div class="wr-result__body">';
-		/* translators: %s: draw date. */
-		$html .= '<p class="wr-eyebrow">' . esc_html( sprintf( __( 'Drawn %s', 'winrocket' ), $date ) ) . '</p>';
+		$html .= '<p class="wr-eyebrow">' . esc_html( $eyebrow ) . '</p>';
 		$html .= '<h3><a href="' . esc_url( get_permalink( $product_id ) ) . '">' . esc_html( $product->get_name() ) . '</a></h3>';
+		$html .= '<div class="wr-result__counts">' . implode( '', $counts ) . '</div>';
 		$html .= '<ol class="wr-result__winners">';
-		foreach ( $rows as $i => $row ) {
-			$name  = $row['winner_name'];
-			$order = ! empty( $row['order_id'] ) ? wc_get_order( $row['order_id'] ) : false;
-			if ( $order && function_exists( 'wxgiveaway_format_winner_display_name' ) ) {
-				$name = wxgiveaway_format_winner_display_name( $order );
+
+		foreach ( $groups as $key => $list ) {
+			foreach ( $list as $i => $row ) {
+				$name  = (string) $row['winner_name'];
+				$order = ! empty( $row['order_id'] ) ? wc_get_order( $row['order_id'] ) : false;
+				if ( $order ) {
+					$name = function_exists( 'wxgiveaway_format_winner_display_name' )
+						? wxgiveaway_format_winner_display_name( $order )
+						: trim( $order->get_billing_first_name() . ' ' . $order->get_billing_last_name() );
+				}
+
+				$prize = trim( wp_strip_all_tags( (string) $row['prize_label'] ) );
+				if ( '' === $prize ) {
+					if ( 'draw' === $key ) {
+						/* translators: %d: prize number. */
+						$prize = 0 === $i ? __( 'Main prize', 'winrocket' ) : sprintf( __( 'Prize %d', 'winrocket' ), $i + 1 );
+					} else {
+						$prize = $labels[ $key ];
+					}
+				}
+
+				$html .= '<li class="wr-result__row wr-result__row--' . esc_attr( $key ) . '">'
+					. '<span class="wr-result__type">' . winrocket_icon( $icons[ $key ] ) . esc_html( $labels[ $key ] ) . '</span>'
+					. '<span class="wr-result__prize">' . esc_html( $prize ) . '</span>'
+					. '<span class="wr-result__name">' . esc_html( '' !== trim( $name ) ? $name : __( 'Winner', 'winrocket' ) ) . '</span>'
+					. ( '' !== (string) $row['ticket_no']
+						/* translators: %s: ticket number. */
+						? '<span class="wr-result__ticket">' . esc_html( sprintf( __( 'Ticket %s', 'winrocket' ), $row['ticket_no'] ) ) . '</span>'
+						: '' )
+					. '</li>';
 			}
-			$prize = $row['prize_label'] ? $row['prize_label'] : ( 0 === $i ? __( 'Main prize', 'winrocket' ) : sprintf( /* translators: %d: prize number. */ __( 'Prize %d', 'winrocket' ), $i + 1 ) );
-			$html .= '<li><span class="wr-result__prize">' . winrocket_icon( 'trophy' ) . esc_html( $prize ) . '</span>'
-				. '<span class="wr-result__name">' . esc_html( $name ? $name : __( 'Winner', 'winrocket' ) ) . '</span>'
-				/* translators: %s: ticket number. */
-				. '<span class="wr-result__ticket">' . esc_html( sprintf( __( 'Ticket %s', 'winrocket' ), $row['ticket_no'] ) ) . '</span></li>';
 		}
 		$html .= '</ol></div></article>';
 	}
