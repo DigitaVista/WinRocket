@@ -285,7 +285,17 @@
 /* Draw results ------------------------------------------------------------- */
 .wr-results { display: grid; gap: 16px; }
 .wr-result { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 20px; padding: 16px; border: 1px solid var(--wr-border); border-radius: var(--wr-radius); background: #fff; }
-.wr-result__media img { width: 100%; height: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 4px; }
+.wr-result__media { position: sticky; top: 24px; align-self: start; display: block; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 4px; background: var(--wr-surface); }
+.wr-result__media img { display: block; width: 100%; height: 100% !important; max-width: none; object-fit: cover; }
+.wr-result__body { min-width: 0; }
+.wr-result__more { margin-top: 8px; }
+.wr-result__more > summary { display: inline-flex; align-items: center; gap: 6px; padding: 6px 0; color: var(--wr-primary); font-size: 13px; font-weight: 700; cursor: pointer; list-style: none; }
+.wr-result__more > summary::-webkit-details-marker { display: none; }
+.wr-result__more > summary::after { content: ""; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .15s ease; }
+.wr-result__more[open] > summary::after { transform: rotate(-135deg) translateY(-2px); }
+.wr-result__more-close, .wr-result__more[open] .wr-result__more-open { display: none; }
+.wr-result__more[open] .wr-result__more-close { display: inline; }
+.wr-result__more > .wr-result__winners { margin-top: 8px; }
 .wr-result h3 { margin: 0 0 10px; font-size: 18px; }
 .wr-result h3 a { color: var(--wr-navy); text-decoration: none; }
 .wr-result__winners { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
@@ -334,6 +344,7 @@
 	.wr-single div.product > .summary { grid-column: 1; grid-row: auto; }
 	.wr-single div.product > .summary { margin-top: 24px !important; }
 	.wr-result { grid-template-columns: 1fr; }
+	.wr-result__media { position: static; }
 	.wr-footer__links { justify-content: flex-start; }
 	.wr-header__top { flex-wrap: wrap !important; }
 }

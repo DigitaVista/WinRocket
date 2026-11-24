@@ -42,8 +42,11 @@ add_action( 'after_setup_theme', 'winrocket_setup' );
  * Front-end assets.
  */
 function winrocket_assets() {
-	wp_enqueue_style( 'winrocket', WINROCKET_URI . '/assets/css/theme.css', array(), WINROCKET_VERSION );
-	wp_enqueue_script( 'winrocket', WINROCKET_URI . '/assets/js/theme.js', array(), WINROCKET_VERSION, true );
+	// File time as version, so browsers load new CSS/JS straight after an update.
+	$css = WINROCKET_DIR . '/assets/css/theme.css';
+	$js  = WINROCKET_DIR . '/assets/js/theme.js';
+	wp_enqueue_style( 'winrocket', WINROCKET_URI . '/assets/css/theme.css', array(), file_exists( $css ) ? (string) filemtime( $css ) : WINROCKET_VERSION );
+	wp_enqueue_script( 'winrocket', WINROCKET_URI . '/assets/js/theme.js', array(), file_exists( $js ) ? (string) filemtime( $js ) : WINROCKET_VERSION, true );
 }
 add_action( 'wp_enqueue_scripts', 'winrocket_assets', 20 );
 

@@ -658,8 +658,7 @@ function winrocket_render_draw_results( $a ) {
 		$html .= '<p class="wr-eyebrow">' . esc_html( $eyebrow ) . '</p>';
 		$html .= '<h3><a href="' . esc_url( get_permalink( $product_id ) ) . '">' . esc_html( $product->get_name() ) . '</a></h3>';
 		$html .= '<div class="wr-result__counts">' . implode( '', $counts ) . '</div>';
-		$html .= '<ol class="wr-result__winners">';
-
+		$items = array();
 		foreach ( $groups as $key => $list ) {
 			foreach ( $list as $i => $row ) {
 				$name  = (string) $row['winner_name'];
@@ -680,7 +679,7 @@ function winrocket_render_draw_results( $a ) {
 					}
 				}
 
-				$html .= '<li class="wr-result__row wr-result__row--' . esc_attr( $key ) . '">'
+				$items[] = '<li class="wr-result__row wr-result__row--' . esc_attr( $key ) . '">'
 					. '<span class="wr-result__type">' . winrocket_icon( $icons[ $key ] ) . esc_html( $labels[ $key ] ) . '</span>'
 					. '<span class="wr-result__prize">' . esc_html( $prize ) . '</span>'
 					. '<span class="wr-result__name">' . esc_html( '' !== trim( $name ) ? $name : __( 'Winner', 'winrocket' ) ) . '</span>'
@@ -691,7 +690,17 @@ function winrocket_render_draw_results( $a ) {
 					. '</li>';
 			}
 		}
-		$html .= '</ol></div></article>';
+		// Long lists: first rows visible, the rest behind "Show all".
+		$visible = (int) apply_filters( 'winrocket_results_visible_winners', 5 );
+		$html   .= '<ol class="wr-result__winners">' . implode( '', array_slice( $items, 0, $visible ) ) . '</ol>';
+		if ( count( $items ) > $visible ) {
+			$html .= '<details class="wr-result__more"><summary>'
+				/* translators: %s: number of winners. */
+				. '<span class="wr-result__more-open">' . esc_html( sprintf( __( 'Show all %s winners', 'winrocket' ), number_format_i18n( count( $items ) ) ) ) . '</span>'
+				. '<span class="wr-result__more-close">' . esc_html__( 'Show fewer', 'winrocket' ) . '</span>'
+				. '</summary><ol class="wr-result__winners" start="' . esc_attr( $visible + 1 ) . '">' . implode( '', array_slice( $items, $visible ) ) . '</ol></details>';
+		}
+		$html .= '</div></article>';
 	}
 	$html .= '</div>';
 
